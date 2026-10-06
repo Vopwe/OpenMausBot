@@ -21,14 +21,12 @@ import { ServerPairingCard } from "./ServerPairingCard";
 import { PeopleSection } from "./PeopleSection";
 import { ActivitySection } from "./ActivitySection";
 import { useOwnerOrAdmin } from "@/lib/use-owner-or-admin";
-import { currentPhonePairingTarget, phonePairingSettingsAction } from "@/lib/phone-pairing";
+import { currentPhonePairingTarget } from "@/lib/phone-pairing";
 import { CustomDomainSettings } from "./CustomDomainSettings";
 import { BrowserProfilesManager } from "./BrowserProfilesManager";
 import { RemoteComputerSection } from "./RemoteComputerSection";
 import { ConnectedWorkspacesSettings } from "./ConnectedWorkspacesSettings";
 import { OrganizationSettings } from "./OrganizationSettings";
-import { CloudAccountSettings } from "./CloudAccountSettings";
-import { ProSettingsCard } from "./ProIntroduction";
 import { Card, SettingRow, Switch } from "./SettingsPrimitives";
 import { effortLabel } from "./ModelPicker";
 import { EFFORT_LEVELS, isEffortLevel } from "../../shared/wire";
@@ -87,7 +85,6 @@ export const SECTIONS: Array<{
   { id: "skills", group: "ai", labelKey: "settings.section.skills", icon: BookOpen, keywords: ["skills", "library", "assign", "agent skills", "skill md"] },
   { id: "desktopWorkspaces", group: "computers", labelKey: "settings.section.desktopWorkspaces", icon: Building2, keywords: ["workspace", "cloud", "hosted", "vps", "server", "servers", "connect", "pair", "switch", "local"] },
   { id: "computer", group: "computers", labelKey: "settings.section.computer", icon: Monitor, keywords: ["vm", "virtual", "desktop", "browser", "built-in browser", "profiles", "browser profiles"] },
-  { id: "cloudAccount", group: "account", labelKey: "settings.section.cloudAccount", icon: User, keywords: ["cloud", "account", "personal", "sign in", "pro", "subscription", "billing"] },
   { id: "organization", group: "account", labelKey: "settings.section.organization", icon: Building2, keywords: ["company", "organization", "organisation", "sign in", "enroll", "managed", "models", "disconnect"] },
   { id: "usage", group: "account", labelKey: "settings.section.usage", icon: Coins, keywords: ["tokens", "cost", "billing", "plan", "quota", "remaining", "weekly", "5-hour", "model", "used"] },
   { id: "backups", group: "account", labelKey: "settings.section.backups", icon: Archive, keywords: ["export", "import", "restore", "full backup", "password", "recovery"] },
@@ -112,7 +109,7 @@ export const SIMPLE_PAGES: SimpleSettingsPage[] = [
   { id: "appearance", labelKey: "settings.section.appearance", icon: Palette, sections: ["appearance"] },
   { id: "ai", labelKey: "settings.group.ai", icon: Sparkles, sections: ["engines", "connections", "decisionModel"] },
   { id: "computers", labelKey: "settings.group.computers", icon: Monitor, sections: ["companion", "desktopWorkspaces", "computer"] },
-  { id: "account", labelKey: "settings.group.account", icon: CircleUser, sections: ["cloudAccount", "organization", "people", "activity"] },
+  { id: "account", labelKey: "settings.group.account", icon: CircleUser, sections: ["organization", "people", "activity"] },
 ];
 
 /** Advanced-only pages. A deep link to one still opens it in Simple mode, as
@@ -794,9 +791,6 @@ export function SettingsModal() {
   const baseSections = SECTIONS.filter((entry) => !remoteActive || entry.id === "companion" || entry.id === "appearance" || entry.id === "desktopWorkspaces")
     .filter((entry) => entry.id !== "desktopWorkspaces" || Boolean(window.ogb?.environments))
     .filter((entry) => entry.id !== "organization" || Boolean(window.ogb?.organization))
-    // On the person's own Cloud in this app's window, the plan shows read only (cloudPlan);
-    // never on any other server open here (a VPS, a hosted workspace, someone else's).
-    .filter((entry) => entry.id !== "cloudAccount" || Boolean(window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true)))
     // the operator's screen for other workspaces exists only where a fleet agent does
     .filter((entry) => entry.id !== "workspaces" || workspacesAvailable(state.config))
     // sign-in by email is a hosted server's; the desktop app pairs devices under Remote access,
@@ -893,18 +887,12 @@ export function SettingsModal() {
         return <ConnectedWorkspacesSettings />;
       case "organization":
         return window.ogb?.organization && !remoteActive ? <OrganizationSettings /> : null;
-      case "cloudAccount":
-        return (window.ogb?.cloudAccount || (window.ogb?.cloudPlan && state.config?.cloudHome === true)) && !remoteActive
-          ? <CloudAccountSettings linkRequest={state.appSettingsCloudLink} cloudHome={state.config?.cloudHome === true}
-            onConnectPhone={() => dispatch(phonePairingSettingsAction())} />
-          : null;
       case "general":
         return (
           <>
             <div className="rounded-2xl border border-accent-border/40 bg-raised-hover/40 px-1">
               <AdvancedModeRow />
             </div>
-            <ProSettingsCard />
             <Card title={t("settings.profile.title")} subtitle={t("settings.profile.sharedSubtitle")}>
               <ProfileFields />
             </Card>
@@ -967,10 +955,6 @@ export function SettingsModal() {
               <ApiKeyRow section="openai" testProvider="openai" />
               <ApiKeyRow section="anthropic" testProvider="anthropic" />
               <AnthropicEveryClaudeBot />
-              <ApiKeyRow section="xai" testProvider="xai" />
-              <ApiKeyRow section="openrouter" testProvider="openrouter" />
-              <ApiKeyRow section="mistral" testProvider="mistral" />
-              <ApiKeyRow section="cerebras" testProvider="cerebras" />
               <details data-api-keys-other className="rounded-lg border border-hairline/40 bg-inset px-3 py-2" open={Boolean(state.config?.openaiCompat?.configured)}>
                 <summary className="cursor-pointer text-[13px] text-ink-secondary">{t("keys.other.title")}</summary>
                 <div className="mt-3 flex flex-col gap-4">
@@ -979,7 +963,6 @@ export function SettingsModal() {
                 </div>
               </details>
               <div className="pt-2 text-[11.5px] font-medium uppercase tracking-wide text-ink-secondary">{t("keys.integrations.title")}</div>
-              <ApiKeyRow section="box" />
               <VpsConnection />
               <ApiKeyRow section="opencodeGo" />
               {/* A Cloud owner has no terminal there: the keys for other

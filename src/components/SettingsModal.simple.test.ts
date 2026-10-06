@@ -59,7 +59,6 @@ vi.mock("./CompanionSection", () => ({ CompanionSection: () => null }));
 vi.mock("./ServerPairingCard", () => ({ ServerPairingCard: () => null }));
 vi.mock("./ConnectedWorkspacesSettings", () => ({ ConnectedWorkspacesSettings: marker("desktopWorkspaces") }));
 vi.mock("./LocalComputerSection", () => ({ LocalComputerSection: marker("computer") }));
-vi.mock("./CloudAccountSettings", () => ({ CloudAccountSettings: marker("cloudAccount") }));
 vi.mock("./OrganizationSettings", () => ({ OrganizationSettings: marker("organization") }));
 vi.mock("./PeopleSection", () => ({ PeopleSection: marker("people") }));
 vi.mock("./ActivitySection", () => ({ ActivitySection: marker("activity") }));
@@ -68,7 +67,7 @@ vi.mock("./WorkspaceBackupSettings", () => ({ WorkspaceBackupSettings: marker("b
 vi.mock("./RoomTurnTimeoutSettings", () => ({ RoomTurnTimeoutSettings: () => null }));
 vi.mock("./CompanyBackupSettings", () => ({ CompanyBackupSettings: () => null }));
 
-const desktop = { ogb: { environments: {}, organization: {}, cloudAccount: {} } };
+const desktop = { ogb: { environments: {}, organization: {} } };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -147,11 +146,11 @@ describe("Settings in Simple mode", () => {
     expect(html).toContain('aria-label="Enable the built-in browser"');
   });
 
-  it("stacks OMB Cloud and Organization on Account in the desktop app", () => {
-    fixture.section = "cloudAccount";
+  it("stacks Organization on Account in the desktop app", () => {
+    fixture.section = "organization";
     const html = render();
     expect(currentPage(html)).toBe("account");
-    expect(blocks(html)).toEqual(["cloudAccount", "organization"]);
+    expect(blocks(html)).toEqual(["organization"]);
   });
 
   it("adds People and Activity to Account for a hosted workspace's admins in a browser", () => {
@@ -191,7 +190,6 @@ describe("Settings in Simple mode", () => {
     ["remote", "computers"],
     ["desktopWorkspaces", "computers"],
     ["computer", "computers"],
-    ["cloudAccount", "account"],
     ["organization", "account"],
   ])("lands a deep link to %s on %s", (section, page) => {
     fixture.section = section;
