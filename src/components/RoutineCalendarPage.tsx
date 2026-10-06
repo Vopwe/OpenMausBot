@@ -53,7 +53,7 @@ import { routineRunLabel, routineRunsOn, routineRunTime, routineScheduleState } 
 import { useAdvancedMode } from "@/lib/interface-mode";
 import { t } from "@/lib/i18n";
 import { useModalDialog } from "@/hooks/use-modal-dialog";
-import { useDesktopCapabilities } from "@/components/DesktopCapabilities";
+import { useCaptionChrome, useDesktopCapabilities } from "@/components/DesktopCapabilities";
 import { WebhooksPanel } from "@/components/WebhooksPanel";
 import type { CalendarCall, CalendarCallAttachment, CalendarCallInput } from "@/lib/calendar-calls";
 import { cn } from "@/lib/cn";
@@ -1878,6 +1878,7 @@ export function RoutinesPage({ onBack, onOpenRoom }: { onBack: () => void; onOpe
     if (item.kind === "routine" && item.run && ["failed", "missed"].includes(item.run.status) && !item.run.seenAt) dispatch({ type: "markRoutineRunSeen", runId: item.run.id });
   };
   const macInset = capabilities.windowChrome === "mac-inset";
+  const { controlsShiftStyle } = useCaptionChrome();
   const windowDragStyle = macInset
     ? ({ WebkitAppRegion: "drag" } as CSSProperties)
     : undefined;
@@ -1994,7 +1995,7 @@ export function RoutinesPage({ onBack, onOpenRoom }: { onBack: () => void; onOpe
               <button type="button" onClick={goToday} className="ml-1 rounded-lg border border-hairline/50 bg-panel px-2.5 py-1 text-[12px] font-medium text-ink hover:bg-raised">{t("routines.today")}</button>
             </div>
           )}
-          <div className="ml-auto flex flex-wrap items-center gap-2" style={windowNoDragStyle}>
+          <div className="ml-auto flex flex-wrap items-center gap-2" style={{ ...windowNoDragStyle, ...controlsShiftStyle }}>
             <div role="group" className="flex items-center rounded-lg border border-hairline/50 bg-panel p-0.5" aria-label={t("routines.view.label")}>
               <button type="button" aria-pressed={shownSection === "calendar" && layout === "day"} onClick={() => showLayout("day")} className={segment(shownSection === "calendar" && layout === "day")}>{t("routines.view.day")}</button>
               <button type="button" aria-pressed={shownSection === "calendar" && layout === "week"} onClick={() => showLayout("week")} className={segment(shownSection === "calendar" && layout === "week")}>{t("routines.view.week")}</button>
