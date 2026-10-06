@@ -1403,7 +1403,7 @@ function CalendarGrid({
 
   return (
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto border-l border-t border-hairline/40 bg-app">
-      <div className="sticky top-0 z-30 grid bg-app/95 backdrop-blur" style={{ gridTemplateColumns, minWidth }}>
+      <div className="sticky top-0 z-10 grid bg-app/95 backdrop-blur" style={{ gridTemplateColumns, minWidth }}>
         <div className="border-b border-r border-hairline/40 px-2 py-3 text-center text-[9px] uppercase tracking-wider text-ink-secondary">{formatGmtOffset(-new Date(anchor).getTimezoneOffset())}</div>
         {starts.map((start) => {
           const date = new Date(start);
@@ -1970,7 +1970,7 @@ export function RoutinesPage({ onBack, onOpenRoom }: { onBack: () => void; onOpe
   return (
     <main className="flex h-full min-w-0 flex-1 flex-col bg-app animate-workspace-in">
       <header
-        className={cn("shrink-0 border-b border-hairline/35 bg-app py-3 pr-4", macInset ? "pl-[86px]" : "pl-4")}
+        className={cn("sticky top-0 z-20 shrink-0 border-b border-hairline/35 bg-app py-3 pr-4", macInset ? "pl-[86px]" : "pl-4")}
         style={windowDragStyle}
       >
         <div className="flex flex-wrap items-center gap-2">
@@ -2022,7 +2022,7 @@ export function RoutinesPage({ onBack, onOpenRoom }: { onBack: () => void; onOpe
       </header>
       <RoutineWakeBar />
 
-      <div className="@container/routines relative flex min-h-0 flex-1">
+      <div className="@container/routines relative flex min-h-0 flex-1 pt-2">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {shownSection === "webhooks" ? <WebhooksPanel bots={visibleBots} createRequest={webhookCreateRequest} onCreateHandled={handleWebhookCreateHandled} /> : shownSection === "logs" ? (
             <div className="min-h-0 flex-1 overflow-y-auto"><RoutineLogs runs={filteredRuns} bots={state.bots} loading={state.routinesLoadState === "loading" && filteredRuns.length === 0} error={state.routinesLoadState === "error"} routineId={routineFilter} status={statusFilter} onStatusChange={setStatusFilter} onClearRoutine={() => setRoutineFilter(undefined)} onOpen={openRun} /></div>
@@ -2041,7 +2041,7 @@ export function RoutinesPage({ onBack, onOpenRoom }: { onBack: () => void; onOpe
         </div>
         {/* Beside the grid when there is room; over it on a narrow window. */}
         {drawerOpen && liveSelected && (
-          <div className="absolute inset-y-0 right-0 z-30 flex shadow-2xl @min-[760px]/routines:static @min-[760px]/routines:shadow-none">
+          <div className="absolute inset-y-0 right-0 z-20 flex shadow-2xl @min-[760px]/routines:static @min-[760px]/routines:shadow-none">
             <EventDetails key={`${liveSelected.kind}:${liveSelected.id}`} item={liveSelected} bots={state.bots} onClose={() => setSelected(null)} onEdit={editSelected} onOpenRun={openRun} onCallChanged={(id) => { if (id) setCalls((current) => current.filter((call) => call.id !== id)); else void loadCalls(); }} onOpenRoom={onOpenRoom} />
           </div>
         )}
