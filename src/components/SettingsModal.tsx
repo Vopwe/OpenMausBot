@@ -13,6 +13,7 @@ import { withTourReset } from "@/lib/guided-tour";
 import { completionPatch } from "@/lib/onboarding";
 import { AnthropicEveryClaudeBot, ApiKeyRow, OpenAiCompatUrl, OpenCodeProviderKeys } from "./ApiKeys";
 import { useUpdaterState } from "@/lib/updater";
+import { brand } from "../lib/brand";
 import { EnginesSettings } from "./EnginesSettings";
 import { LocalComputerSection } from "./LocalComputerSection";
 import { CompanionSection } from "./CompanionSection";
@@ -31,6 +32,7 @@ import { LicenseExpiryBanner } from "./LicenseExpiryBanner";
 import { SkinPicker } from "./SkinPicker";
 import { FONT_IDS, applyFont, readFont, type FontId } from "@/lib/fonts";
 import { RoomTurnTimeoutSettings } from "./RoomTurnTimeoutSettings";
+import { McpCallTimeoutSettings } from "./McpCallTimeoutSettings";
 import { AboutMeSettings } from "./AboutMeSettings";
 import { ThreadConcurrencySettings } from "./ThreadConcurrencySettings";
 import { AutomaticRecoverySettings } from "./AutomaticRecoverySettings";
@@ -42,7 +44,7 @@ import { cn } from "@/lib/cn";
 import { glassPopupFrameStyle } from "@/lib/glass-popup";
 import { setNotificationSounds, useNotificationSounds } from "@/lib/notification-preferences";
 import { setPinnedCircles, setUniversalPins, usePinnedCircles, useUniversalPins } from "@/lib/sidebar-preferences";
-import { setShowThreads, useShowThreads } from "@/lib/thread-preferences";
+import { setShowThreads, useShowThreadsChoice } from "@/lib/thread-preferences";
 import { setAdvancedMode, useAdvancedMode } from "@/lib/interface-mode";
 import { parseSidebarDensity, setSidebarDensity, SIDEBAR_DENSITIES, useSidebarDensity, type SidebarDensity } from "@/lib/sidebar-preferences";
 import { setShowRunCard, useShowRunCard } from "@/lib/run-card-preferences";
@@ -189,7 +191,8 @@ function ProfileFields() {
 
 /** This app's updates, which download by themselves. Shown once the desktop
  * app answers: on this computer's page and the person's own Cloud page, never
- * on another server's, where its buttons would do nothing. */
+ * on another server's, where its buttons would do nothing. "Ready" names the
+ * app: on My Cloud's Settings it is this app that restarts, not the Cloud. */
 export function UpdatesRow() {
   const s = useUpdaterState();
   const updater = window.ogb?.updater;
@@ -205,8 +208,8 @@ export function UpdatesRow() {
           ? t("settings.updates.preparing")
           : s.status === "downloaded"
             ? s.installMode === "handoff"
-              ? t("settings.updates.readyInstall", { version: s.version ?? "" })
-              : t("settings.updates.ready", { version: s.version ?? "" })
+              ? t("settings.updates.readyInstall", { app: brand().name, version: s.version ?? "" })
+              : t("settings.updates.ready", { app: brand().name, version: s.version ?? "" })
             : s.status === "installing"
               ? s.message ||
                 (s.installMode === "handoff"
@@ -451,7 +454,7 @@ function AdvancedModeRow() {
 }
 
 function ShowThreadsRow() {
-  const enabled = useShowThreads();
+  const enabled = useShowThreadsChoice();
   return (
     <SettingRow title={t("settings.threadDisplay.title")} subtitle={t("settings.threadDisplay.subtitle")}>
       <Switch
@@ -758,7 +761,10 @@ export function SettingsModal() {
 
   const sectionIndex = currentPage?.sections.indexOf(section) ?? 0;
   useEffect(() => {
-    if (!advanced && scrollRef.current) revealSettingsBlock(scrollRef.current, section, sectionIndex);
+    // Advanced mode gives every section its own page, so a new one starts at
+    // the top instead of at the last page's scroll offset (MOCA-292: "Change
+    // key" landed on API keys scrolled past the key it was opened for).
+    if (scrollRef.current) revealSettingsBlock(scrollRef.current, section, advanced ? 0 : sectionIndex);
   }, [advanced, section, sectionIndex]);
 
   useEffect(() => {
@@ -835,6 +841,9 @@ export function SettingsModal() {
             <Card title={t("settings.roomTurns.title")} subtitle={t("settings.roomTurns.subtitle")}>
               <RoomTurnTimeoutSettings />
             </Card>
+            <Card title={t("settings.mcpCalls.title")} subtitle={t("settings.mcpCalls.subtitle")}>
+              <McpCallTimeoutSettings />
+            </Card>
             <ThreadConcurrencySettings />
             {!remoteActive && <RoutinesInConversationRow />}
             <AutomaticRecoverySettings />
@@ -857,7 +866,9 @@ export function SettingsModal() {
               {remoteActive && <AdvancedModeRow />}
               <FontRow />
               <SidebarDensityRow />
-              <ShowThreadsRow />
+              {/* Simple mode keeps one conversation per bot, so the switch
+                  only means something in Advanced. */}
+              {advanced && <ShowThreadsRow />}
               <PinnedCirclesRow />
               <UniversalPinsRow />
               <NotificationSoundsRow />
