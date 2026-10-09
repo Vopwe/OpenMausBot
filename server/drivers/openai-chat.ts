@@ -717,8 +717,12 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
                   const answer = await approval.question(ASK_USER_TOOL, askQuestionSummary(questions), questions);
                   abort.signal.throwIfAborted();
                   if (answer === null) {
-                    denials.push(ASK_USER_TOOL);
-                    result = { ok: false, text: "The person did not answer this question. Do not guess an answer; ask again later or proceed without it." };
+                    // An unanswered question is absence, not a "no": the card
+                    // timed out or the person closed it. Keep the turn alive so
+                    // the model's final response stands; it is told not to
+                    // guess and may ask again later. An explicit deny of a
+                    // permission stays terminal.
+                    result = { ok: true, text: "The person did not answer this question. Do not guess an answer; ask again later or proceed without it." };
                   } else {
                     result = { ok: true, text: answer };
                   }
@@ -848,6 +852,7 @@ export function createOpenAIChatRuntime<Config>(options: RuntimeOptions<Config>)
         localComputerMcp: options.tools !== false,
         browserMcp: options.tools !== false, nativeImageInput: true, images: true } : {}),
         sessionModelSwitch: "in-session", customMcp: options.tools !== false, agentsMcp: options.tools !== false, composioMcp: options.tools !== false,
+        dataMcp: options.tools !== false,
         // The runtime owns the whole tool loop, so it can always take a
         // user message mid-turn: park it, deliver before the next completion.
         queueing: true,

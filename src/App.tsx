@@ -53,14 +53,17 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
     };
     const url = new URL(window.location.href);
     const requestedSettings = url.searchParams.get("desktop-settings");
+    const cloud = ["cloud", "cloud-settings", "cloud-add", "cloud-add-howto"].includes(requestedSettings ?? "");
     if (requestedSettings === "workspaces" || (requestedSettings === "organization" && window.ogb.organization && !remoteClient) ||
-      ((requestedSettings === "cloud" || requestedSettings === "cloud-settings") && window.ogb.cloudAccount && !remoteClient)) {
+      (cloud && window.ogb.cloudAccount && !remoteClient)) {
       url.searchParams.delete("desktop-settings");
       window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
       if (requestedSettings === "organization") dispatch({ type: "toggleAppSettings", open: true, section: "organization" });
       else if (requestedSettings === "cloud") dispatch(CLOUD_LINK_SETTINGS);
-      // The lending menu-bar item: Settings → OMB Cloud, with no automatic action.
+      // The lending menu-bar item: Settings → OpenMausBot Cloud, with no automatic action.
       else if (requestedSettings === "cloud-settings") dispatch({ type: "toggleAppSettings", open: true, section: "cloudAccount" });
+      // Add a Cloud… in the server menu, plain or reached through Show me how.
+      else if (requestedSettings === "cloud-add" || requestedSettings === "cloud-add-howto") dispatch({ type: "openCloudAdd", source: requestedSettings === "cloud-add" ? "app_menu" : "app_howto" });
       else open();
     }
     return window.ogb.environments.onOpenSettings?.(open);
@@ -120,6 +123,7 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
     !state.instances.some((i) => i.snapshot.state === "available");
   // An OMB Cloud home with none of the person's own engines signed in yet:
   // its first run, and every bot until then, is the engine sign-in.
+  // Vopwe trim: no Cloud sign-in flow; local engines only.
   void viewer;
   void engineReady;
 
@@ -240,12 +244,17 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
   // is absent in the browser.
   // "cloud" is openmausbot://cloud (the Cloud page's "Open in the app"):
   // OMB Cloud, marked as opened by the link so that view signs in or connects.
+  // "cloud-add": Add a Cloud… in the server menu (or openmausbot://cloud while
+  // a checkout this app opened is pending), "cloud-add-howto" the same reached
+  // through Show me how: the Add a Cloud dialog.
   useEffect(() => {
-    return window.ogb?.onOpenAppSettings?.(section => dispatch(section === "cloud" && window.ogb?.cloudAccount && !remoteClient
-      ? CLOUD_LINK_SETTINGS
-      : section === "cloud-settings" && window.ogb?.cloudAccount && !remoteClient
-        ? { type: "toggleAppSettings", open: true, section: "cloudAccount" }
-        : { type: "toggleAppSettings", open: true, ...(section === "organization" && window.ogb?.organization && !remoteClient ? { section } : {}) }));
+    return window.ogb?.onOpenAppSettings?.(section => dispatch((section === "cloud-add" || section === "cloud-add-howto") && window.ogb?.cloudAccount && !remoteClient
+      ? { type: "openCloudAdd", source: section === "cloud-add" ? "app_menu" : "app_howto" }
+      : section === "cloud" && window.ogb?.cloudAccount && !remoteClient
+        ? CLOUD_LINK_SETTINGS
+        : section === "cloud-settings" && window.ogb?.cloudAccount && !remoteClient
+          ? { type: "toggleAppSettings", open: true, section: "cloudAccount" }
+          : { type: "toggleAppSettings", open: true, ...(section === "organization" && window.ogb?.organization && !remoteClient ? { section } : {}) }));
   }, [dispatch]);
 
   // The viewer outlives ComputerPanel and can target any bot, so release control

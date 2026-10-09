@@ -671,7 +671,7 @@ export function EventEditor({
   );
   const scheduleNote = kind === "routine" && (
                 <p className="text-[11px] leading-relaxed text-ink-secondary">
-                  Runs while OpenMausBot is open on this computer — it cannot wake a sleeping Mac. A run missed by less than 12 hours still happens when the app is back; for 24/7, run OpenMausBot on a VPS.
+                  Runs while OpenMausBot is open on this computer. A run missed by less than 12 hours still happens when the app is back.
                 </p>
               );
   const repeatDetails = (

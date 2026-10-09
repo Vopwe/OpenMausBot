@@ -14,11 +14,6 @@ function render(density: SidebarDensity) {
   return renderToStaticMarkup(createElement(Capture));
 }
 
-function renderAppsButton() {
-  function Capture() { return SidebarAppsButton(); }
-  return renderToStaticMarkup(createElement(Capture));
-}
-
 beforeEach(() => {
   vi.stubGlobal("window", {});
   fixture.dispatch.mockReset();
@@ -34,8 +29,9 @@ describe("sidebar footer places", () => {
   });
 
   it("offers Apps beside the profile", () => {
-    const html = renderAppsButton();
+    function Capture() { return SidebarAppsButton(); }
+    const html = renderToStaticMarkup(createElement(Capture));
     expect(html).toContain('data-sidebar-nav="apps"');
-    expect(html).toContain('aria-label="Apps"');
+    expect(html).toMatch(/data-tour="nav-apps" data-sidebar-nav="apps"/);
   });
 });

@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { ensureDirs, NATIVE_DIR } from "../config.ts";
+import { BUILT_IN_DATA_SYSTEM_PROMPT } from "../data/instructions.ts";
 import type { ProviderInstance, SendTurnInput } from "../contracts.ts";
 import { removeTempDir } from "../testing/cleanup.ts";
 import { recordEvents } from "../testing/events.ts";
@@ -181,6 +182,24 @@ describe("a searched MCP catalog", () => {
     const names = f.requests[0].tools!.map((tool) => tool.function.name);
     expect(names.filter((name) => name.startsWith("whop_"))).toEqual(["whop_search_tools", "whop_describe_tool", "whop_call_tool"]);
     expect(f.requests[1].messages.at(-1)).toMatchObject({ role: "tool", tool_call_id: "call_search", content: expect.stringContaining("payments_list") });
+  });
+});
+
+describe("built-in Data provider parity", () => {
+  it.each(["openai-compat", "grok", "minimax", "cerebras"] as const)("mounts and executes Data through %s with the shared instructions", async (provider) => {
+    const f = await fixture((_body, response, round) => {
+      if (round === 1) sse(response, [chunk({ tool_calls: [toolCall("data_write")] }, "tool_calls")]);
+      else answer(response);
+    }, provider);
+    const data = f.integrations!.custom!.audit as NonNullable<SendTurnInput["integrations"]>["data"];
+    expect(f.instance.adapter.capabilities.dataMcp).toBe(true);
+    await f.start({ integrations: { data }, system: BUILT_IN_DATA_SYSTEM_PROMPT });
+    await f.decide();
+    expect(await f.completed()).toMatchObject({ ok: true });
+    expect(f.requests[0].tools?.map(tool => tool.function.name)).toContain("data_write");
+    expect(f.requests[0].messages).toContainEqual({ role: "system", content: BUILT_IN_DATA_SYSTEM_PROMPT });
+    expect(f.effects()).toEqual([{ name: "receipt", value: "done" }]);
+    expect(f.requests[1].messages).toContainEqual(expect.objectContaining({ role: "tool", tool_call_id: "call_write", content: expect.stringContaining("Stored receipt=done") }));
   });
 });
 
@@ -505,18 +524,23 @@ describe.each<Provider>(["openai-compat", "grok", "minimax"])("%s structured too
     expect(f.effects()).toEqual([]);
   }, 20_000);
 
-  it("returns an unanswered ask_user as a denial the model must not paper over", async () => {
+  it("completes the turn when an ask_user goes unanswered, instead of ending it as a denial", async () => {
     const f = await fixture((_body, response, round) => {
       if (round === 1) sse(response, [chunk({ content: null, tool_calls: [toolCall("ask_user", JSON.stringify({ questions: [{ question: "Ship it?" }] }), "call_ask")] }, "tool_calls")]);
-      else answer(response, "I went ahead and shipped it.");
+      else answer(response, "I proceeded without the answer.");
     }, provider);
     await f.start();
     const opened = await f.recorder.until((event) => event.type === "request.opened");
     expect(await f.instance.adapter.respondToRequest(f.threadId, opened.requestId!, { behavior: "deny" })).toBe("rejected");
-    expect(await f.completed()).toMatchObject({ ok: false, denials: ["ask_user"] });
+    const completed = await f.completed();
+    // Absence is not a "no": the turn ends with the final answer intact, no
+    // denial recorded, no tool_error stop reason.
+    expect(completed).toMatchObject({ ok: true });
+    expect((completed as any).stopReason).not.toBe("tool_error");
+    expect((completed as any).denials).toBeUndefined();
     expect(f.requests[1].messages.at(-1)).toMatchObject({ role: "tool", tool_call_id: "call_ask" });
     expect(JSON.parse(String(f.requests[1].messages.at(-1)?.content))).toMatchObject({
-      ok: false,
+      ok: true,
       result: expect.stringContaining("did not answer"),
     });
   }, 20_000);

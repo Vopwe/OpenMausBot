@@ -1,7 +1,8 @@
 // The foot of the sidebar. Vopwe trim: Routines, Triggers, Apps and Team map
 // moved to the profile menu and Settings. This keeps only the guided tour
 // anchor so existing tours do not break, plus upstream's Apps button that
-// lives at the end of the profile row.
+// lives at the end of the profile row. The collapsible Tools header props
+// are accepted and ignored: there are no rows left to fold.
 import { Puzzle } from "lucide-react";
 
 import { cn } from "@/lib/cn";
@@ -32,8 +33,18 @@ export function SidebarAppsButton() {
   );
 }
 
-export function SidebarFooterNav({ density }: { density: SidebarDensity }) {
+export function SidebarFooterNav({
+  density,
+  collapsed = false,
+  onToggleCollapsed,
+}: {
+  density: SidebarDensity;
+  collapsed?: boolean;
+  onToggleCollapsed?: () => void;
+}) {
   void density;
+  void collapsed;
+  void onToggleCollapsed;
   return (
     <nav data-tour="tools" aria-label={t("sidebar.tools")} className="flex flex-col gap-0.5" />
   );
